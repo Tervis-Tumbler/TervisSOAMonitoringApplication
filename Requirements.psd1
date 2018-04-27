@@ -1,9 +1,9 @@
 @{
     PSDependOptions = @{
         Target = '$PWD/Dependencies'
-        AddToPath = $True            # I want to prepend project to $ENV:Path and $ENV:PSModulePath
+        AddToPath = $True
     }
 
-    # Clone a git repo
     'Tervis-Tumbler/TervisMailMessage' = 'master'
+    'Tervis-Tumbler/TervisOracleSOASuite' = 'master'
 }
