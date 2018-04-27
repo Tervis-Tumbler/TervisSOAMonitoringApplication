@@ -5,7 +5,7 @@ function Invoke-TervosOracleSOAJobMonitoringApplication {
 }
 
 function Invoke-TervisSOAMonitoringApplicationDockerBuild {
-    $BuildDirectory = "$env:TMPDIR/SOAMonitorngDocker"
+    $BuildDirectory = "$($env:TMPDIR)SOAMonitorngDocker"
     New-Item -ItemType Directory -Path $BuildDirectory
     Invoke-PSDepend -Force -Install -InputObject @{
         PSDependOptions = @{
@@ -16,8 +16,25 @@ function Invoke-TervisSOAMonitoringApplicationDockerBuild {
         'Tervis-Tumbler/TervisOracleSOASuite' = 'master'
         'Tervis-Tumbler/TervisSOAMonitoringApplication' = 'master'
     }
-    docker build --no-cache -t tervissoamonitoringapplication $ModulePath
-    docker build --no-cache -t testing $ModulePath
+
+    Push-Location -Path $BuildDirectory
+@"
+FROM microsoft/powershell
+ENV TZ=America/New_York
+RUN echo `$TZ > /etc/timezone && \
+    apt-get update && apt-get install -y tzdata && \
+    rm /etc/localtime && \
+    ln -snf /usr/share/zoneinfo/`$TZ /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata && \
+    apt-get clean
+COPY . /usr/local/share/powershell/Modules
+#ENTRYPOINT ["pwsh", "-Command", "Invoke-TervosOracleSOAJobMonitoringApplication" ]
+ENTRYPOINT ["pwsh"]
+"@ | Out-File -Encoding ascii -FilePath .\Dockerfile -Force
+
+docker build --no-cache -t tervissoamonitoringapplication .
+
+    Pop-Location
 }
 
 function Remove-DockerContainerAllOff {
@@ -34,12 +51,16 @@ function Invoke-TervisSOAMonitoringApplicationDockerRun {
         $EmailTo,
         $EmailFrom
     )
-    docker run --env SOASchedulerURL='$SOASchedulerURL' --env EmailTo='$EmailTo' --env EmailFrom='$EmailFrom' --name soamon --volume $ModulePath/Dependencies:/usr/local/share/powershell/Modules tervissoamonitoringapplication
-    docker run --tty --interactive --env TZ=America/New_York --name soamon --volume /Users/chrismagnuson/.local/share/powershell/Modules/:/usr/local/share/powershell/Modules microsoft/powershell
-    docker run --tty --interactive --env TZ=America/New_York --name soamon --volume /Users/chrismagnuson/.local/share/powershell/Modules/:/usr/local/share/powershell/Modules testing
+@"
+docker run --tty --interactive --env SOASchedulerURL="$SOASchedulerURL" --env EmailTo="$EmailTo" --env EmailFrom="$EmailFrom" --name soamon tervissoamonitoringapplication
+"@
+
+
+    #docker run --tty --interactive --env TZ=America/New_York --name soamon --volume /Users/chrismagnuson/.local/share/powershell/Modules/:/usr/local/share/powershell/Modules microsoft/powershell
+    #docker run --tty --interactive --env TZ=America/New_York --name soamon --volume /Users/chrismagnuson/.local/share/powershell/Modules/:/usr/local/share/powershell/Modules testing
 }
 
 function Func {
-    Invoke-TervisSOAMonitoringApplicationDockerRun 
+    Invoke-TervisSOAMonitoringApplicationDockerRun -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com
     Invoke-TervosOracleSOAJobMonitoring -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com
 }
