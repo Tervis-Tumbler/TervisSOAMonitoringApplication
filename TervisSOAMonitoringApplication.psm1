@@ -5,10 +5,11 @@ function Invoke-TervosOracleSOAJobMonitoringApplication {
 }
 
 function Invoke-TervisSOAMonitoringApplicationDockerBuild {
-    New-Item -ItemType Directory -Path $ModulePath -Name Dependencies
+    $BuildDirectory = "$env:TMPDIR/SOAMonitorngDocker"
+    New-Item -ItemType Directory -Path $BuildDirectory
     Invoke-PSDepend -Force -Install -InputObject @{
         PSDependOptions = @{
-            Target = '$PWD/Dependencies'
+            Target = $BuildDirectory
         }
     
         'Tervis-Tumbler/TervisMailMessage' = 'master'
