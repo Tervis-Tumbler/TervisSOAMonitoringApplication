@@ -6,7 +6,7 @@ function Invoke-TervosOracleSOAJobMonitoringApplication {
 
 function Invoke-TervisSOAMonitoringApplicationDockerBuild {
     $BuildDirectory = "$($env:TMPDIR)SOAMonitorngDocker"
-    New-Item -ItemType Directory -Path $BuildDirectory
+    New-Item -ItemType Directory -Path $BuildDirectory -ErrorAction SilentlyContinue
     Invoke-PSDepend -Force -Install -InputObject @{
         PSDependOptions = @{
             Target = $BuildDirectory
@@ -32,9 +32,11 @@ COPY . /usr/local/share/powershell/Modules
 ENTRYPOINT ["pwsh"]
 "@ | Out-File -Encoding ascii -FilePath .\Dockerfile -Force
 
-docker build --no-cache -t tervissoamonitoringapplication .
+    docker build --no-cache -t tervissoamonitoringapplication .
 
     Pop-Location
+
+    Remove-Item -Path $BuildDirectory -Recurse -Force
 }
 
 function Remove-DockerContainerAllOff {
@@ -63,4 +65,6 @@ docker run --tty --interactive --env SOASchedulerURL="$SOASchedulerURL" --env Em
 function Func {
     Invoke-TervisSOAMonitoringApplicationDockerRun -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com
     Invoke-TervosOracleSOAJobMonitoring -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com
+
+    Set-PSBreakpoint -Command Invoke-TervosOracleSOAJobMonitoringApplication
 }
