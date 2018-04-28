@@ -18,6 +18,12 @@ function Invoke-TervisSOAMonitoringApplicationDockerBuild {
     }
 
     Push-Location -Path $BuildDirectory
+
+@"
+**/.git
+**/.vscode
+"@ | Out-File -Encoding ascii -FilePath .dockerignore -Force
+
 @"
 FROM microsoft/powershell
 ENV TZ=America/New_York
@@ -67,4 +73,15 @@ function Func {
     Invoke-TervosOracleSOAJobMonitoring -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com
 
     Set-PSBreakpoint -Command Invoke-TervosOracleSOAJobMonitoringApplication
+
+    $env:PSModulePath -split ":" | select -First 1 -Skip 1 | Set-Location
+    
+    docker tag 3f641a1e9573 tervis/tervissoamonitoringapplication:0.0.1
+    docker push tervis/tervissoamonitoringapplication
+
+    kubectl create -f ./SOAMonitor.yaml
+    kubectl delete -f ./SOAMonitor.yaml
+    kubectl proxy
+    kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+    http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
 }
