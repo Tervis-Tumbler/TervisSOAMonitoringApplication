@@ -1,7 +1,10 @@
 $ModulePath = (Get-Module -ListAvailable TervisSOAMonitoringApplication).ModuleBase
 
-$SOAEnvironment = [PSCustomObject]@{
-
+$SOAEnvironments = [PSCustomObject]@{
+    Name = "Production"
+    NotificationEmail = "SOAIssues@tervis.com"
+    SOASchedulerURL = "http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read"
+    JobsThatShouldBeDisabled = "WarrantyOrderJob", "WebWarrantyJob", "WOMZRJob", "ImageIntJob"
 }
 
 function Invoke-TervosOracleSOAJobMonitoringApplication {
@@ -106,9 +109,6 @@ function Func {
 
 function Invoke-InstallTervisSAMonitoringApplication {
     param (
-        [Parameter(Mandatory)]$SOASchedulerURL,
-        [Parameter(Mandatory)]$EmailTo,
-        [Parameter(Mandatory)]$EmailFrom,
         [Parameter(Mandatory)]$ComputerName
     )
     $ProgramData = "C:\ProgramData"
@@ -125,17 +125,24 @@ function Invoke-InstallTervisSAMonitoringApplication {
         'Tervis-Tumbler/TervisOracleSOASuite' = 'master'
         'Tervis-Tumbler/TervisSOAMonitoringApplication' = 'master'
     }
-
+    $OFSBackup = $OFS
+    $OFS = ""
 @"
 Get-ChildItem -Path $SOAMonitoringDirectoryLocal -Directory | 
 ForEach-Object {
     Import-Module -Name `$_.FullName -Force
 }
 
-Invoke-TervosOracleSOAJobMonitoringApplication -SOASchedulerURL $SOASchedulerURL -EmailTo $EmailTo -EmailFrom $EmailFrom
+$(
+    foreach ($SOAEnvironment in $SOAEnvironments) {
+        "Invoke-TervosOracleSOAJobMonitoringApplication -SOASchedulerURL $($SOAEnvironment.SOASchedulerURL) -NotificationEmail $($SOAEnvironment.NotificationEmail) -EnvironmentName $($SOAEnvironment.Name) -JobsThatShouldBeDisabled $($SOAEnvironment.JobsThatShouldBeDisabled)"
+    }
+)
 "@ |
     Out-File -FilePath $SOAMonitoringDirectoryRemote\Script.ps1
     
+    $OFS = $OFSBackup
+
     $ScheduledTasksCredential = New-Object System.Management.Automation.PSCredential ("system", (new-object System.Security.SecureString))
 
     Install-PowerShellApplicationScheduledTask -PathToScriptForScheduledTask $SOAMonitoringDirectoryLocal\Script.ps1 `
