@@ -1,5 +1,9 @@
 $ModulePath = (Get-Module -ListAvailable TervisSOAMonitoringApplication).ModuleBase
 
+$SOAEnvironment = [PSCustomObject]@{
+
+}
+
 function Invoke-TervosOracleSOAJobMonitoringApplication {
     param (
         $SOASchedulerURL = $env:SOASchedulerURL,
@@ -84,6 +88,7 @@ docker run --tty --interactive --env SOASchedulerURL="$SOASchedulerURL" --env Em
 function Func {
     Invoke-TervisSOAMonitoringApplicationDockerRun -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com
     Invoke-TervosOracleSOAJobMonitoring -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com
+    Invoke-InstallTervisSAMonitoringApplication -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com -ComputerName inf-tasks01
 
     Set-PSBreakpoint -Command Invoke-TervosOracleSOAJobMonitoringApplication
 
@@ -101,10 +106,10 @@ function Func {
 
 function Invoke-InstallTervisSAMonitoringApplication {
     param (
-        $SOASchedulerURL,
-        $EmailTo,
-        $EmailFrom,
-        $ComputerName
+        [Parameter(Mandatory)]$SOASchedulerURL,
+        [Parameter(Mandatory)]$EmailTo,
+        [Parameter(Mandatory)]$EmailFrom,
+        [Parameter(Mandatory)]$ComputerName
     )
     $ProgramData = "C:\ProgramData"
     $SOAMonitoringDirectoryLocal = "$ProgramData\Tervis\SOAMonitoring"
@@ -125,13 +130,13 @@ function Invoke-InstallTervisSAMonitoringApplication {
 Get-ChildItem -Path $ImportModulePath | Import-Module -Force
 Invoke-TervosOracleSOAJobMonitoringApplication -SOASchedulerURL $SOASchedulerURL -EmailTo $EmailTo -EmailFrom $EmailFrom
 "@ |
-    Out-File -Path $SOAMonitoringDirectoryRemote\Script.ps1
-
-    $PathToScriptForScheduledTask
+    Out-File -FilePath $SOAMonitoringDirectoryRemote\Script.ps1
+    
+    $ScheduledTasksCredential = New-Object System.Management.Automation.PSCredential ("system", (new-object System.Security.SecureString))
 
     Install-PowerShellApplicationScheduledTask -PathToScriptForScheduledTask $SOAMonitoringDirectoryLocal\Script.ps1 `
+        -TaskName "Invoke-TervosOracleSOAJobMonitoringApplication" `
         -Credential $ScheduledTasksCredential `
         -RepetitionInterval EveryDayEvery15Minutes `
         -ComputerName $ComputerName
-
 }
