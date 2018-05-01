@@ -13,7 +13,7 @@ function Invoke-TervosOracleSOAJobMonitoringApplication {
         $EmailTo = $env:EmailTo,
         $EmailFrom = $env:EmailFrom
     )
-    Invoke-TervosOracleSOAJobMonitoring @PSBoundParameters
+    Invoke-TervisOracleSOAJobMonitoring  @PSBoundParameters
 }
 
 function Invoke-TervosOracleSOAJobMonitoringApplicationJsonParam {
@@ -21,7 +21,7 @@ function Invoke-TervosOracleSOAJobMonitoringApplicationJsonParam {
     ConvertFrom-Json |
     ConvertTo-HashTable
 
-    Invoke-TervosOracleSOAJobMonitoring @ConfigurationParameters
+    Invoke-TervisOracleSOAJobMonitoring  @ConfigurationParameters
 }
 
 function Invoke-TervisSOAMonitoringApplicationDockerBuild {
@@ -54,7 +54,7 @@ RUN echo `$TZ > /etc/timezone && \
     dpkg-reconfigure -f noninteractive tzdata && \
     apt-get clean
 COPY . /usr/local/share/powershell/Modules
-#ENTRYPOINT ["pwsh", "-Command", "Invoke-TervosOracleSOAJobMonitoringApplication" ]
+#ENTRYPOINT ["pwsh", "-Command", "Invoke-TervisOracleSOAJobMonitoring " ]
 ENTRYPOINT ["pwsh"]
 "@ | Out-File -Encoding ascii -FilePath .\Dockerfile -Force
 
@@ -90,10 +90,10 @@ docker run --tty --interactive --env SOASchedulerURL="$SOASchedulerURL" --env Em
 
 function Func {
     Invoke-TervisSOAMonitoringApplicationDockerRun -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com
-    Invoke-TervosOracleSOAJobMonitoring -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com
+    Invoke-TervisOracleSOAJobMonitoring  -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com
     Invoke-InstallTervisSAMonitoringApplication -SOASchedulerURL http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read -EmailTo cmagnuson@tervis.com -EmailFrom cmagnuson@tervis.com -ComputerName inf-tasks01
 
-    Set-PSBreakpoint -Command Invoke-TervosOracleSOAJobMonitoringApplication
+    Set-PSBreakpoint -Command Invoke-TervisOracleSOAJobMonitoring 
 
     $env:PSModulePath -split ":" | select -First 1 -Skip 1 | Set-Location
     
@@ -135,7 +135,7 @@ ForEach-Object {
 
 $(
     foreach ($SOAEnvironment in $SOAEnvironments) {
-        "Invoke-TervosOracleSOAJobMonitoringApplication -SOASchedulerURL $($SOAEnvironment.SOASchedulerURL) -NotificationEmail $($SOAEnvironment.NotificationEmail) -EnvironmentName $($SOAEnvironment.Name) -JobsThatShouldBeDisabled $($SOAEnvironment.JobsThatShouldBeDisabled)"
+        "Invoke-TervisOracleSOAJobMonitoring -SOASchedulerURL $($SOAEnvironment.SOASchedulerURL) -NotificationEmail $($SOAEnvironment.NotificationEmail) -EnvironmentName $($SOAEnvironment.Name) -JobsThatShouldBeDisabled $($SOAEnvironment.JobsThatShouldBeDisabled -join ",")"
     }
 )
 "@ |
@@ -146,7 +146,7 @@ $(
     $ScheduledTasksCredential = New-Object System.Management.Automation.PSCredential ("system", (new-object System.Security.SecureString))
 
     Install-PowerShellApplicationScheduledTask -PathToScriptForScheduledTask $SOAMonitoringDirectoryLocal\Script.ps1 `
-        -TaskName "Invoke-TervosOracleSOAJobMonitoringApplication" `
+        -TaskName "Invoke-TervisOracleSOAJobMonitoring" `
         -Credential $ScheduledTasksCredential `
         -RepetitionInterval EveryDayEvery15Minutes `
         -ComputerName $ComputerName
