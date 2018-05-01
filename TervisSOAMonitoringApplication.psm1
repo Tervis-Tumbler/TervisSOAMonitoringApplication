@@ -109,24 +109,25 @@ function Func {
 
 function Invoke-InstallTervisSAMonitoringApplication {
     param (
-        [Parameter(Mandatory)]$ComputerName
+        [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
     )
-    $ProgramData = "C:\ProgramData"
-    $SOAMonitoringDirectoryLocal = "$ProgramData\Tervis\SOAMonitoring"
-    $SOAMonitoringDirectoryRemote = $SOAMonitoringDirectoryLocal | ConvertTo-RemotePath -ComputerName $ComputerName
-    Remove-Item -Path $SOAMonitoringDirectoryRemote -ErrorAction SilentlyContinue -Recurse -Force
-    New-Item -ItemType Directory -Path $SOAMonitoringDirectoryRemote -ErrorAction SilentlyContinue
-    Invoke-PSDepend -Force -Install -InputObject @{
-        PSDependOptions = @{
-            Target = $SOAMonitoringDirectoryRemote
+    process {
+        $ProgramData = "C:\ProgramData"
+        $SOAMonitoringDirectoryLocal = "$ProgramData\Tervis\SOAMonitoring"
+        $SOAMonitoringDirectoryRemote = $SOAMonitoringDirectoryLocal | ConvertTo-RemotePath -ComputerName $ComputerName
+        Remove-Item -Path $SOAMonitoringDirectoryRemote -ErrorAction SilentlyContinue -Recurse -Force
+        New-Item -ItemType Directory -Path $SOAMonitoringDirectoryRemote -ErrorAction SilentlyContinue
+        Invoke-PSDepend -Force -Install -InputObject @{
+            PSDependOptions = @{
+                Target = $SOAMonitoringDirectoryRemote
+            }
+        
+            'Tervis-Tumbler/TervisMailMessage' = 'master'
+            'Tervis-Tumbler/TervisOracleSOASuite' = 'master'
+            'Tervis-Tumbler/TervisSOAMonitoringApplication' = 'master'
         }
-    
-        'Tervis-Tumbler/TervisMailMessage' = 'master'
-        'Tervis-Tumbler/TervisOracleSOASuite' = 'master'
-        'Tervis-Tumbler/TervisSOAMonitoringApplication' = 'master'
-    }
-    $OFSBackup = $OFS
-    $OFS = ""
+        $OFSBackup = $OFS
+        $OFS = ""
 @"
 Get-ChildItem -Path $SOAMonitoringDirectoryLocal -Directory | 
 ForEach-Object {
@@ -139,15 +140,16 @@ $(
     }
 )
 "@ |
-    Out-File -FilePath $SOAMonitoringDirectoryRemote\Script.ps1
-    
-    $OFS = $OFSBackup
+        Out-File -FilePath $SOAMonitoringDirectoryRemote\Script.ps1
+        
+        $OFS = $OFSBackup
 
-    $ScheduledTasksCredential = New-Object System.Management.Automation.PSCredential ("system", (new-object System.Security.SecureString))
+        $ScheduledTasksCredential = New-Object System.Management.Automation.PSCredential ("system", (new-object System.Security.SecureString))
 
-    Install-PowerShellApplicationScheduledTask -PathToScriptForScheduledTask $SOAMonitoringDirectoryLocal\Script.ps1 `
-        -TaskName "Invoke-TervisOracleSOAJobMonitoring" `
-        -Credential $ScheduledTasksCredential `
-        -RepetitionInterval EveryDayEvery15Minutes `
-        -ComputerName $ComputerName
+        Install-PowerShellApplicationScheduledTask -PathToScriptForScheduledTask $SOAMonitoringDirectoryLocal\Script.ps1 `
+            -TaskName "Invoke-TervisOracleSOAJobMonitoring" `
+            -Credential $ScheduledTasksCredential `
+            -RepetitionInterval EveryDayEvery15Minutes `
+            -ComputerName $ComputerName
+    }
 }
