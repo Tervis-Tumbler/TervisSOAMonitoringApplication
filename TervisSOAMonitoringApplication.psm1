@@ -13,7 +13,7 @@ function Invoke-TervosOracleSOAJobMonitoringApplication {
     Invoke-TervosOracleSOAJobMonitoring @PSBoundParameters
 }
 
-function Invoke-TervosOracleSOAJobMonitoringApplication {
+function Invoke-TervosOracleSOAJobMonitoringApplicationJsonParam {
     $ConfigurationParameters = Get-Content -Path $ModulePath/Parameters.json |
     ConvertFrom-Json |
     ConvertTo-HashTable
@@ -114,7 +114,7 @@ function Invoke-InstallTervisSAMonitoringApplication {
     $ProgramData = "C:\ProgramData"
     $SOAMonitoringDirectoryLocal = "$ProgramData\Tervis\SOAMonitoring"
     $SOAMonitoringDirectoryRemote = $SOAMonitoringDirectoryLocal | ConvertTo-RemotePath -ComputerName $ComputerName
-
+    Remove-Item -Path $SOAMonitoringDirectoryRemote -ErrorAction SilentlyContinue -Recurse -Force
     New-Item -ItemType Directory -Path $SOAMonitoringDirectoryRemote -ErrorAction SilentlyContinue
     Invoke-PSDepend -Force -Install -InputObject @{
         PSDependOptions = @{
@@ -127,7 +127,11 @@ function Invoke-InstallTervisSAMonitoringApplication {
     }
 
 @"
-Get-ChildItem -Path $ImportModulePath | Import-Module -Force
+Get-ChildItem -Path $SOAMonitoringDirectoryLocal -Directory | 
+ForEach-Object {
+    Import-Module -Name `$_.FullName -Force
+}
+
 Invoke-TervosOracleSOAJobMonitoringApplication -SOASchedulerURL $SOASchedulerURL -EmailTo $EmailTo -EmailFrom $EmailFrom
 "@ |
     Out-File -FilePath $SOAMonitoringDirectoryRemote\Script.ps1
