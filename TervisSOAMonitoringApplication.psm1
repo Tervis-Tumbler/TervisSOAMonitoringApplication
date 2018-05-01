@@ -1,7 +1,20 @@
 $ModulePath = (Get-Module -ListAvailable TervisSOAMonitoringApplication).ModuleBase
 
 function Invoke-TervosOracleSOAJobMonitoringApplication {
-    Invoke-TervosOracleSOAJobMonitoring -SOASchedulerURL $env:SOASchedulerURL -EmailTo $env:EmailTo -EmailFrom $env:EmailFrom
+    param (
+        $SOASchedulerURL = $env:SOASchedulerURL,
+        $EmailTo = $env:EmailTo,
+        $EmailFrom = $env:EmailFrom
+    )
+    Invoke-TervosOracleSOAJobMonitoring @PSBoundParameters
+}
+
+function Invoke-TervosOracleSOAJobMonitoringApplication {
+    $ConfigurationParameters = Get-Content -Path $ModulePath/Parameters.json |
+    ConvertFrom-Json |
+    ConvertTo-HashTable
+
+    Invoke-TervosOracleSOAJobMonitoring @ConfigurationParameters
 }
 
 function Invoke-TervisSOAMonitoringApplicationDockerBuild {
@@ -84,4 +97,41 @@ function Func {
     kubectl proxy
     kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
     http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
+}
+
+function Invoke-InstallTervisSAMonitoringApplication {
+    param (
+        $SOASchedulerURL,
+        $EmailTo,
+        $EmailFrom,
+        $ComputerName
+    )
+    $ProgramData = "C:\ProgramData"
+    $SOAMonitoringDirectoryLocal = "$ProgramData\Tervis\SOAMonitoring"
+    $SOAMonitoringDirectoryRemote = $SOAMonitoringDirectoryLocal | ConvertTo-RemotePath -ComputerName $ComputerName
+
+    New-Item -ItemType Directory -Path $SOAMonitoringDirectoryRemote -ErrorAction SilentlyContinue
+    Invoke-PSDepend -Force -Install -InputObject @{
+        PSDependOptions = @{
+            Target = $SOAMonitoringDirectoryRemote
+        }
+    
+        'Tervis-Tumbler/TervisMailMessage' = 'master'
+        'Tervis-Tumbler/TervisOracleSOASuite' = 'master'
+        'Tervis-Tumbler/TervisSOAMonitoringApplication' = 'master'
+    }
+
+@"
+Get-ChildItem -Path $ImportModulePath | Import-Module -Force
+Invoke-TervosOracleSOAJobMonitoringApplication -SOASchedulerURL $SOASchedulerURL -EmailTo $EmailTo -EmailFrom $EmailFrom
+"@ |
+    Out-File -Path $SOAMonitoringDirectoryRemote\Script.ps1
+
+    $PathToScriptForScheduledTask
+
+    Install-PowerShellApplicationScheduledTask -PathToScriptForScheduledTask $SOAMonitoringDirectoryLocal\Script.ps1 `
+        -Credential $ScheduledTasksCredential `
+        -RepetitionInterval EveryDayEvery15Minutes `
+        -ComputerName $ComputerName
+
 }
