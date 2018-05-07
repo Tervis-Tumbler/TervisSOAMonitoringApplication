@@ -4,7 +4,7 @@ $SOAEnvironments = [PSCustomObject]@{
     Name = "Production"
     NotificationEmail = "SOAIssues@tervis.com"
     SOASchedulerURL = "http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read"
-    JobsThatShouldBeDisabled = "WarrantyOrderJob", "WebWarrantyJob", "WOMZRJob", "ImageIntJob"
+    JobsThatShouldBeDisabled = "WarrantyOrderJob","WOMZRJob","ImageIntJob"
 }
 
 function Invoke-TervosOracleSOAJobMonitoringApplication {
