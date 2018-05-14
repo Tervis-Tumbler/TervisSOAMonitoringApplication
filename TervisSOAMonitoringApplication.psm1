@@ -1,11 +1,5 @@
 $ModulePath = (Get-Module -ListAvailable TervisSOAMonitoringApplication).ModuleBase
 
-$SOAEnvironments = [PSCustomObject]@{
-    Name = "Production"
-    NotificationEmail = "SOAIssues@tervis.com"
-    SOASchedulerURL = "http://soaweblogic.production.tervis.prv:7201/SOAScheduler/soaschedulerservlet?action=read"
-    JobsThatShouldBeDisabled = "WarrantyOrderJob","WOMZRJob","ImageIntJob"
-}
 
 function Invoke-TervisSOAMonitoringApplicationDockerBuild {
     Invoke-PowerShellApplicationDockerBuild -ModuleName TervisSOAMonitoringApplication -DependentTervisModuleNames "TervisMailMessage","TervisOracleSOASuite" -CommandsString "Invoke-TervisOracleSOAJobMonitoring"
@@ -22,7 +16,7 @@ docker run --tty --interactive --env SOASchedulerURL="$SOASchedulerURL" --env Em
 "@
 }
 
-function Invoke-InstallTervisSAMonitoringApplication {
+function Install-TervisSAMonitoringApplication {
     param (
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
     )
@@ -32,7 +26,7 @@ function Invoke-InstallTervisSAMonitoringApplication {
 
         $ScheduledScriptCommandsString = @"
 $(
-    foreach ($SOAEnvironment in $SOAEnvironments) {
+    foreach ($SOAEnvironment in (Get-SOAEnvironment)) {
         "Invoke-TervisOracleSOAJobMonitoring -SOASchedulerURL $($SOAEnvironment.SOASchedulerURL) -NotificationEmail $($SOAEnvironment.NotificationEmail) -EnvironmentName $($SOAEnvironment.Name) -JobsThatShouldBeDisabled $($SOAEnvironment.JobsThatShouldBeDisabled -join ",")"
     }
 )
