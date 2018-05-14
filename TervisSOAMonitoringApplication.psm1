@@ -27,7 +27,7 @@ function Install-TervisSAMonitoringApplication {
         $ScheduledScriptCommandsString = @"
 $(
     foreach ($SOAEnvironment in (Get-SOAEnvironment)) {
-        "Invoke-TervisOracleSOAJobMonitoring -SOASchedulerURL $($SOAEnvironment.SOASchedulerURL) -NotificationEmail $($SOAEnvironment.NotificationEmail) -EnvironmentName $($SOAEnvironment.Name)"
+        "Invoke-TervisOracleSOAJobMonitoring -EnvironmentName $($SOAEnvironment.Name)"
     }
 )
 "@        
