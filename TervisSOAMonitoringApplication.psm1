@@ -40,7 +40,7 @@ $(
             DependentTervisModuleNames = "TervisMailMessage","TervisOracleSOASuite"
             ScheduledScriptCommandsString = $ScheduledScriptCommandsString
             ScheduledTasksCredential = $ScheduledTasksCredential
-            SchduledTaskName = "Invoke-TervisOracleSOAJobMonitoring"
+            ScheduledTaskName = "Invoke-TervisOracleSOAJobMonitoring"
             RepetitionIntervalName = "EveryDayEvery15Minutes"
         }
     
