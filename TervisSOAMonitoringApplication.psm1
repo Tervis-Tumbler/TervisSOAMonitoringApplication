@@ -16,7 +16,7 @@ docker run --tty --interactive --env SOASchedulerURL="$SOASchedulerURL" --env Em
 "@
 }
 
-function Install-TervisSAMonitoringApplication {
+function Install-TervisSOAMonitoringApplication {
     param (
         [Parameter(Mandatory,ValueFromPipelineByPropertyName)]$ComputerName
     )
